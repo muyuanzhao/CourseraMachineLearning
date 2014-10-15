@@ -1,0 +1,76 @@
+---
+title: "Coursera - Machine Learning Project"
+author: "Rob Reid"
+date: "October 2014"
+output: html_document
+---
+
+Assumes caret, randomforest and e1071 packages have been installed
+Assumes data files have already been downloaded
+
+### Load Data###
+```{r}
+pmlTrain <- read.csv('pml-training.csv')
+pmlTest <- read.csv('pml-testing.csv')
+```
+
+### Partition data sets### 
+Half of the data into each set
+```{r}
+library(caret)
+dataSet <- createDataPartition(pmlTrain$classe, p=.5, list=FALSE)
+dataTraining <- pmlTrain[dataSet,]
+dataTesting <- pmlTrain[-dataSet,]
+```
+
+###  Histogram - Classe values### 
+```{r}
+hist(as.numeric(dataTraining$classe), xlab="Classe", main="Training Data Set", axes=FALSE)
+axis(1, at = c(1,2,3,4,5), labels = c("A","B","C","D","E"))
+axis(2)
+```
+
+### Data Cleaning### 
+
+Remove timestamps, names, etc that won't help predict
+```{r}
+r <- c(1:5)
+dataTraining <- dataTraining[-r]
+```
+
+Remove columns with more than 90% NAs
+```{r}
+dataTraining <- dataTraining[,colSums(is.na(dataTraining)) < (nrow(dataTraining) * .9)]
+```
+
+Remove attributes that won't help predict
+```{r}
+nzv <- nearZeroVar(dataTraining)
+dataTraining <- dataTraining[-nzv]
+```
+
+### Create model### 
+The random forest algorithm is used to construct the model
+
+```{r}
+library(randomForest)
+model <- randomForest(classe~.,data=dataTraining)
+model
+```
+
+The model estimates the error rate at 0.49% 
+
+### Evaluate testing data### 
+```{r}
+p <- predict(model, dataTesting)
+cm <- confusionMatrix(dataTesting$classe, p);
+cm
+```
+The prediction yields an accuracy rate of 99.5%, which means an error rate of 0.5%, so almost identical to the predicted error rate of 0.49%
+
+### Predict values for pmlTest data ### 
+```{r}
+p2 <- predict(model, pmlTest)
+p2
+```
+
